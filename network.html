@@ -136,7 +136,238 @@
         .allow-btn:hover { background-color: #0056b3; }
         .block-btn { background-color: #dc3545; }
         .block-btn:hover { background-color: #bd2130; }
-        .inline-popup { display: none; }
+        .inline-popup {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.6);
+            padding: 25px;
+            width: 450px;
+            text-align: right;
+            z-index: 1000;
+            color: white;
+            display: none;
+        }
+        .close-inline {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: none;
+            border: none;
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
+            padding: 0;
+            margin: 0;
+            opacity: 0.8;
+        }
+        .inline-content h4 {
+            margin-top: 0;
+            font-size: 1.5em;
+            text-align: center;
+        }
+        .duration-options {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin: 20px 0;
+            justify-content: center;
+        }
+        .duration-btn {
+            width: 45%;
+            padding: 8px;
+            background: rgba(138, 43, 226, 0.7);
+            border: 1px solid #9b30ff;
+            margin: 0;
+            transition: background 0.2s, transform 0.2s;
+        }
+        .duration-btn.selected {
+            background: #00ffcc;
+            color: #4b0082;
+            font-weight: bold;
+        }
+        #customFields {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            margin: 20px 0;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 10px;
+            border-radius: 10px;
+            flex-wrap: wrap;
+        }
+        #customFields label {
+            font-size: 0.9em;
+            margin-right: 5px;
+        }
+        #customFields input {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid #9b30ff;
+            color: white;
+            text-align: center;
+            padding: 5px;
+            border-radius: 5px;
+            margin: 0 5px 10px 5px;
+            width: 50px;
+            box-sizing: border-box;
+        }
+        .duration-input-group {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .time-range-group {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin: 20px 0;
+            padding: 10px;
+            border-radius: 10px;
+            background: rgba(0, 0, 0, 0.2);
+            text-align: right;
+        }
+        .time-input-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 5px;
+        }
+        .time-input-row label {
+            font-weight: bold;
+            font-size: 1em;
+            color: #00ffcc;
+            margin-left: 10px;
+        }
+        .time-input-row input[type="datetime-local"] {
+            flex-grow: 1;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid #9b30ff;
+            color: white;
+            padding: 8px;
+            border-radius: 5px;
+            font-family: inherit;
+            font-size: 0.9em;
+        }
+        .buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+        .buttons button {
+            width: 48%;
+            margin: 0;
+            padding: 10px;
+            font-size: 1em;
+        }
+        .cancel-btn {
+            background: #555;
+        }
+        .save-btn {
+            background: #8a2be2;
+        }
+        .action-buttons-group {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .action-buttons-group button {
+            background-color: #28a745;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1.1em;
+            transition: background-color 0.3s, transform 0.3s;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        }
+        .action-buttons-group button:hover {
+            transform: translateY(-2px);
+        }
+        #exportCsvBtn {
+            background-color: #28a745;
+        }
+        #exportCsvBtn:hover {
+            background-color: #218838;
+        }
+        #exportChartPngBtn {
+            background-color: #007bff;
+        }
+        #exportChartPngBtn:hover {
+            background-color: #0056b3;
+        }
+        #interfaceListPopup {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            box-shadow: 0 0 30px rgba(0,0,0,0.8);
+            padding: 25px;
+            width: 350px;
+            max-height: 80vh;
+            overflow-y: auto;
+            text-align: right;
+            z-index: 2000;
+            color: #4b0082;
+            display: none;
+        }
+        #interfaceListPopup h4 {
+            color: #8a2be2;
+            border-bottom: 2px solid #9b30ff;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        #interfaceListPopup ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        #interfaceListPopup ul li {
+            background: #f0f0f0;
+            padding: 8px 15px;
+            margin-bottom: 8px;
+            border-radius: 8px;
+            font-size: 1em;
+            font-weight: bold;
+        }
+        .close-list-popup {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: #dc3545;
+            border: none;
+            color: white;
+            font-size: 18px;
+            cursor: pointer;
+            padding: 5px 10px;
+            border-radius: 5px;
+            opacity: 0.9;
+            transition: 0.3s;
+        }
+        .close-list-popup:hover {
+            background: #c82333;
+            opacity: 1;
+        }
+        #displayDurationControls .duration-input-group input {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid #9b30ff;
+            color: white;
+            text-align: center;
+            padding: 5px;
+            border-radius: 5px;
+            margin: 0 5px 10px 5px;
+            width: 50px;
+            box-sizing: border-box;
+        }
     </style>
 </head>
 <body>
@@ -158,8 +389,7 @@
             <thead>
                 <tr>
                     <th>#</th>
-                    <th>Network</th>
-                    <th>IPv4</th>
+                    <th>Network</th> <th>IPv4</th>
                     <th>IPv6</th>
                     <th>التوصيات</th>
                     <th>البروتوكول</th>
