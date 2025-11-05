@@ -452,20 +452,19 @@
         <ul id="activeInterfaceList"></ul>
     </div>
     <script>
-        let currentSecurityScores = {}; 
+        // إزالة currentSecurityScores و autoScrollEnabled و chartWrapper 
         let scoreUpdateInterval; 
         let dataFetcherInterval; 
-        let autoScrollEnabled = true; // زر التبديل
         
         // ** (Mock Data & Client-Side Functions) **
         let mockBlockedInterfaces = {};
         
         function generateMockNetworkData() {
             const interfaces = [
-                { name: 'Ethernet0', is_up: true, protocol: "TCP/UDP (Ethernet)", ipv4: '192.168.1.10', ipv6: 'fe80::1', mac: '00:1A:2B:3C:4D:5E' },
-                { name: 'Wi-Fi', is_up: true, protocol: "TCP/UDP (Wireless)", ipv4: '192.168.1.11', ipv6: 'fe80::2', mac: 'FF:EE:DD:CC:BB:AA' },
+                { name: 'Ethernet0', is_up: true, protocol: "TCP/UDP (Ethernet)", ipv4: '192.168.1.10', ipv6: 'fe80::1:2345:6789:abcd', mac: '00:1A:2B:3C:4D:5E' },
+                { name: 'Wi-Fi', is_up: true, protocol: "TCP/UDP (Wireless)", ipv4: '192.168.1.11', ipv6: 'fe80::2:1234:5678:90ab', mac: 'FF:EE:DD:CC:BB:AA' },
                 { name: 'Loopback', is_up: true, protocol: "Loopback (TCP/IP)", ipv4: '127.0.0.1', ipv6: '::1', mac: '-' },
-                { name: 'VMnet1', is_up: false, protocol: "TCP/UDP (Virtual)", ipv4: '10.0.0.1', ipv6: 'fe80::3', mac: 'AB:CD:EF:12:34:56' },
+                { name: 'VMnet1', is_up: false, protocol: "TCP/UDP (Virtual)", ipv4: '10.0.0.1', ipv6: 'fe80::3:9876:5432:fedc', mac: 'AB:CD:EF:12:34:56' },
             ];
 
             const now = Date.now();
@@ -494,9 +493,12 @@
                             severity = "Low";
                         }
 
+                        // تعيين قيمة درجة الأمان للقيمة العشوائية المحاكية
+                        let score_value = parseFloat(ml_score); 
+                        
                         return {
                             ...iface,
-                            ml_score: parseFloat(ml_score),
+                            ml_score: score_value,
                             severity: severity,
                             mac_status: mac_status,
                             is_blocked: isBlocked
@@ -533,13 +535,11 @@
                      mockBlockedInterfaces[interfaceName] = null; 
                 }
                 
-                currentSecurityScores[interfaceName] = 0.0;
                 return { status: "blocked", interface: interfaceName };
             } 
             
             if (action === 'allow') {
                 delete mockBlockedInterfaces[interfaceName];
-                currentSecurityScores[interfaceName] = 0.0;
                 return { status: "allowed", interface: interfaceName };
             }
             
@@ -561,8 +561,7 @@
         let popupMode = 'block';
         let currentSsid = 'Unknown_SSID';
         
-        // Functions (getFormattedTime, toDatetimeLocal, getTimeFromDatetimeLocal, getHumanReadableTime, getDurationString, getDurationStringForFileName, calculateTotalSecondsFromInputs, closePopup, getMaxAvailableDuration, showBlockPopup, selectDuration, applyBlock, toggleBlock, updateSaveStatus, showSaveDurationPopup, handlePopupSave, saveFileByTimeRange, exportTableToCSV, saveChartToPNG, showInterfacesForPoint, startScoreUpdater, updateTableOnly, interfaceChangeAnnotator)
-        // ... (تضمين جميع الدوال المساعدة الأخرى كما هي) ...
+        // Functions (getFormattedTime, toDatetimeLocal, getTimeFromDatetimeLocal, getHumanReadableTime, getDurationString, getDurationStringForFileName, calculateTotalSecondsFromInputs, closePopup, getMaxAvailableDuration, showBlockPopup, selectDuration, applyBlock, toggleBlock, updateSaveStatus, showSaveDurationPopup, handlePopupSave, saveFileByTimeRange, exportTableToCSV, saveChartToPNG, showInterfacesForPoint, interfaceChangeAnnotator)
 
         function getFormattedTime() {
             const now = new Date();
@@ -709,11 +708,9 @@
                 else if (selectedDuration === 'permanent') durationMessage = `بشكل دائم.`;
             }
             
-            // استخدام دالة mock post
             const result = await postJSON(url, {});
             if (result.status !== "error") {
                 closePopup();
-                currentSecurityScores[interfaceName] = 0.0; 
                 refreshData();
             } else {
                 alert("محاكاة: فشل محاكاة أمر الحظر. (يرجى مراجعة الكونسول)");
@@ -722,12 +719,8 @@
         async function toggleBlock(interfaceName, block) {
             const url = block ? `/api/block/${interfaceName}/permanent` : `/api/allow/${interfaceName}`;
             
-            // استخدام دالة mock post
             const result = await postJSON(url, {});
             if (result.status !== "error") {
-                if (!block) {
-                    currentSecurityScores[interfaceName] = 0.0;
-                }
                 refreshData();
             } else {
                 alert("محاكاة: فشل محاكاة أمر الحظر/الإلغاء. (يرجى مراجعة الكونسول)");
@@ -999,8 +992,6 @@
         }
         
         async function refreshData() {
-            // ** تم إلغاء استخدام oldScroll/manualScroll **
-
             const data = await getJSON('/api/network-info');
 
             try {
@@ -1057,10 +1048,7 @@
                     chart.canvas.style.width = `${newWidth}px`;
                     chart.canvas.width = newWidth;
                     
-                    // التحكم في التمرير حسب زر التبديل
-                    if (wrapper && autoScrollEnabled) {
-                        wrapper.scrollLeft = wrapper.scrollWidth;
-                    }
+                    // تم إزالة منطق التمرير التلقائي هنا
                     
                     chart.data.labels = dataForDisplay.map(d => d.label);
                     chart.data.datasets[0].data = dataForDisplay.map(d => d.value);
@@ -1068,55 +1056,15 @@
                     chart.options.plugins.interfaceChangeAnnotator.changeData = dataForDisplay.map(d => d.change);
                     chart.update('none');
                 }
-                if (scoreUpdateInterval) {
-                    clearInterval(scoreUpdateInterval);
-                }
-                startScoreUpdater(allInterfacesData);
+                // تم إزالة startScoreUpdater لأنه كان يستخدم currentSecurityScores الذي تم حذفه
+                updateTableOnly(allInterfacesData);
             } catch (e) {
                 console.error("Error in refreshData:", e);
             }
         }
-        function startScoreUpdater(interfacesData) {
-            interfacesData.forEach(item => {
-                interfaceSpeeds[item.interface] = item.ml_score || 0.0;
-                if (currentSecurityScores[item.interface] === undefined) {
-                    currentSecurityScores[item.interface] = 0.0; 
-                }
-            });
-            
-            scoreUpdateInterval = setInterval(() => {
-                let scoresChanged = false;
-                interfacesData.forEach(item => {
-                    let currentScore = currentSecurityScores[item.interface];
-                    let liveSpeedFactor = interfaceSpeeds[item.interface] || 0.0;
-                    
-                    if (item.is_blocked || !item.is_up) {
-                         if (currentScore > 0.0) {
-                            currentSecurityScores[item.interface] = 0.0; 
-                            scoresChanged = true;
-                        }
-                        return;
-                    }
-
-                    const incrementalChange = liveSpeedFactor * MAX_INCREMENT_FACTOR;
-                    
-                    if (Math.abs(currentScore - liveSpeedFactor) > 0.01) {
-                        if (currentScore < liveSpeedFactor) {
-                            currentSecurityScores[item.interface] = Math.min(liveSpeedFactor, currentScore + incrementalChange);
-                        } else {
-                            currentSecurityScores[item.interface] = Math.max(liveSpeedFactor, currentScore - incrementalChange);
-                        }
-                        currentSecurityScores[item.interface] = parseFloat(currentSecurityScores[item.interface].toFixed(2));
-                        scoresChanged = true;
-                    }
-                });
-                
-                if (scoresChanged) {
-                    updateTableOnly(interfacesData); 
-                }
-            }, INCREMENT_TIME);
-            updateTableOnly(interfacesData);
-        }
+        
+        // تم إزالة دالة startScoreUpdater واستبدالها بنسخة معدلة لـ updateTableOnly
+        // لحذف منطق التحديث التدريجي لـ currentSecurityScores
         function updateTableOnly(allInterfacesData) {
             const tbody = document.querySelector('#alertsTable tbody');
             if (!tbody) return;
@@ -1125,19 +1073,25 @@
             allInterfacesForTable.forEach((item, index) => {
                 const number = index + 1;
                 const isBlocked = item.is_blocked;
-                const currentScore = currentSecurityScores[item.interface] || 0.0; 
+                // استخدام قيمة ml_score مباشرة من المحاكاة (درجة الأمان)
+                const currentScore = item.ml_score || 0.0; 
                 const statusClass = item.is_up ? 'status-up' : 'status-down'; 
+                // الحقلين التاليين لا يظهرا بيانات حقيقية في الـ Mock Data، لذا نستخدمهما لتمثيل القيمة الثابتة من المحاكاة
                 const severityClass = `severity-${(item.severity || 'Unknown').toLowerCase()}`;
-                // هنا نستخدم mac_status الذي تم إضافته للمحاكاة
                 const macStatusClass = item.mac_status === 'Recommended' ? 'mac-recommended' : 'mac-unknown';
+                
                 const statusText = isBlocked ? 'محظور' : (item.is_up ? 'نشط' : 'غير نشط');
                 const actionButton = isBlocked
                     ? `<button class="action-btn allow-btn" onclick="toggleBlock('${item.interface}', false)">إلغاء الحظر</button>`
                     : `<button class="action-btn block-btn" onclick="showBlockPopup('${item.interface}')">حظر</button>`;
+                
+                // عرض درجة الأمان كنسبة مئوية
                 let mlScoreHtml = '-';
                 const percentage = Math.round(currentScore * 100); 
                 let scoreClass = 'score-neutral';
                 let icon = '';
+                
+                // منطق تحديد لون درجة الأمان
                 if (percentage >= 70) { 
                     scoreClass = 'score-good'; 
                     icon = ' &nbsp; &#10003;'; 
@@ -1146,7 +1100,10 @@
                     scoreClass = 'score-bad'; 
                     icon = ' &nbsp; &#9888;'; 
                 }
+                
+                // استخدام قيمةml_score * 100% (درجة الأمان)
                 mlScoreHtml = `<span class="${scoreClass}">${percentage}%${icon}</span>`;
+                
                 const tr = document.createElement('tr');
                 if (isBlocked) {
                     tr.style.backgroundColor = 'rgba(255, 128, 128, 0.2)';
@@ -1159,7 +1116,7 @@
                     <td class="${macStatusClass}">${item.mac_status || '-'}</td> 
                     <td>${item.protocol || '-'}</td>
                     <td>${mlScoreHtml}</td> 
-                    <td class="${severityClass}">${item.severity || '-'}</td>
+                    <td>${item.severity || '-'}</td>
                     <td class="${isBlocked ? 'status-blocked' : statusClass}">${statusText}</td>
                     <td>
                         ${actionButton}
@@ -1279,6 +1236,7 @@
             }
             const container = document.querySelector('.container');
             
+            // تم إزالة زر التبديل من newControlsHTML
             const newControlsHTML = `
                 <div id="displayDurationControls" style="text-align: center; margin-top: 20px;">
                     <label>⏱️ تحديد مدة العرض في الرسم البياني :</label>
@@ -1289,13 +1247,6 @@
                     </div>
                     <p style="font-size: 0.9em; margin-top: 10px;">المدة المعروضة حالياً: <span id="currentDurationLabel">5 دقائق</span></p>
                     
-                    <div style="margin: 15px 0; text-align: center;">
-                        <label style="color: #00ffcc; font-weight: bold;">
-                            <input type="checkbox" id="autoScrollToggle" checked style="transform: scale(1.3); margin-left: 8px;">
-                            التمرير التلقائي للرسم البياني
-                        </label>
-                    </div>
-
                     <button id="applyChartDurationBtn" class="action-btn" style="background-color: #007bff; margin-top: 10px;">تطبيق العرض</button>
                 </div>
             `;
@@ -1322,16 +1273,7 @@
             }
             applyBtn.onclick = applyNewChartDuration;
             
-            const autoScrollToggle = document.getElementById('autoScrollToggle');
-            autoScrollToggle.addEventListener('change', function() {
-                autoScrollEnabled = this.checked;
-                if (autoScrollEnabled) {
-                     const wrapper = document.getElementById('chartWrapper');
-                     if (wrapper) {
-                         wrapper.scrollLeft = wrapper.scrollWidth;
-                     }
-                }
-            });
+            // تم إزالة مستمع زر التبديل
             
             dataFetcherInterval = setInterval(refreshData, FETCH_TIME); 
             document.getElementById('currentDurationLabel').textContent = getDurationString(maxDisplaySeconds);
