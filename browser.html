@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>تحليل بيانات المتصفح</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    /* ... (تضمين كود الـ CSS بالكامل كما هو) ... */
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      padding-top: 50px;
+      background: linear-gradient(270deg, #4b0082, #7a1fa2, #8a2be2);
+      background-size: 600% 600%;
+      animation: gradientMove 15s ease infinite;
+      color: white;
+      font-family: 'Cairo', sans-serif;
+      overflow-x: hidden;
+      direction: rtl;
+    }
+
+    @keyframes gradientMove {
+      0% {background-position: 0% 50%;}
+      50% {background-position: 100% 50%;}
+      100% {background-position: 0% 50%;}
+    }
+
+    .container {
+      position: relative;
+      z-index: 1;
+      background: rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(15px);
+      padding: 30px 40px;
+      border-radius: 20px;
+      box-shadow: 0 0 25px rgba(0,0,0,0.5);
+      text-align: center;
+      width: 95%;
+      max-width: 1400px;
+      margin-bottom: 50px;
+      animation: fadeIn 1s ease-in-out;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: scale(0.95); }
+      to { opacity: 1; transform: scale(1); }
+    }
+
+    h1 {
+      margin-bottom: 25px;
+      font-size: 2.5em;
+      color: #fff;
+    }
+    
+    #metrics {
+        display: flex;
+        justify-content: center;
+        gap: 30px;
+        margin-bottom: 20px;
+        font-size: 1.2em;
+        padding: 10px;
+        border-radius: 10px;
+        background: rgba(0, 0, 0, 0.2);
+    }
+    #metrics span {
+        font-weight: bold;
+        color: #00ffcc;
+    }
+
+    #browserChart { 
+        margin-bottom: 30px;
+        background: rgba(0, 0, 0, 0.2);
+        padding: 15px;
+        border-radius: 15px;
+    }
+
+    #alertsTable {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 30px;
+        font-size: 0.9em;
+    }
+    #alertsTable thead tr {
+        background: #8a2be2;
+        border-bottom: 2px solid #9b30ff;
+    }
+    #alertsTable th, #alertsTable td {
+        padding: 12px 10px;
+        text-align: center;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    #alertsTable tbody tr:hover {
+        background: rgba(255, 255, 255, 0.1);
+    }
+    .status-ok { color: #00ffcc; font-weight: bold; }
+    .status-alert { color: #ff4081; font-weight: bold; }
+
+    .action-btn {
+      background: #8a2be2;
+      border: none;
+      padding: 6px 12px;
+      color: white;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: 0.3s;
+      font-size: 0.9em;
+      margin: 2px;
+    }
+    .action-btn:hover {
+      background: #9b30ff;
+      transform: scale(1.05);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>تحليل بيانات المتصفح</h1>
+    <div id="metrics">
+      <p>عدد الاتصالات: <span id="m_flows">0</span></p>
+      <p>اسم الجهاز: <span id="m_hostname">جاري التحميل</span></p>
+      <p>الشبكة اللاسلكية (SSID): <span id="m_ssid">جاري التحميل</span></p>
+    </div>
+    <canvas id="browserChart" width="400" height="200"></canvas>
+    <table id="alertsTable">
+      <thead>
+        <tr>
+          <th>Remote IP</th>
+          <th>اسم الموقع</th>
+          <th>الوقت</th>
+          <th>الحالة</th>
+          <th>الإجراءات</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+  
+  <script>
+
+// ** دالة Mock لإنشاء بيانات المتصفح **
+function generateMockBrowserData() {
+    const flows = [];
+    const siteNames = ["google.com", "facebook.com", "bing.com", "malware-site.com", "safesearch.org", "wikipedia.org"];
+    const currentFlowCount = Math.floor(Math.random() * 8) + 3; // 3 to 10 flows
+    
+    for (let i = 0; i < currentFlowCount; i++) {
+        const siteIndex = Math.floor(Math.random() * siteNames.length);
+        const domain = siteNames[siteIndex];
+        
+        let score = Math.random();
+        if (domain.includes('malware')) {
+            score = Math.random() * 0.4 + 0.6; // 0.6 to 1.0
+        }
+
+        flows.push({
+            // نحاكي هيكل الـ interface هنا، لكن البيانات هي للـ flow
+            ipv4: `172.217.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}`,
+            domain: domain,
+            ml_score: score.toFixed(2),
+        });
+    }
+
+    return {
+        network: {
+            hostname: 'BROWSER-MOCK-PC',
+            ssid: 'BROWSER_TEST_NETWORK',
+            interfaces: flows // نستخدم الـ interfaces لحمل بيانات الـ flows
+        }
+    };
+}
+
+async function getJSON(url) {
+  // استخدام دالة Mock Data
+  if (url === '/api/network-info') {
+      return generateMockBrowserData();
+  }
+  return { network: { interfaces: [], hostname: 'خطأ في الاتصال', ssid: 'خطأ في الاتصال' } };
+}
+
+async function postJSON(url, data) {
+  // بما أننا في وضع GitHub Pages، فإن وظيفة الإجراءات (Actions) لا تعمل بالفعل
+  // لذلك نعرض رسالة خطأ فقط أو نتجاهل.
+  alert("محاكاة: لا يمكن تنفيذ إجراءات الحظر/الإلغاء على خادم ثابت (GitHub Pages).");
+  return { status: "error" };
+}
+
+let historyData = [];
+let maxDisplaySeconds = 300;
+let interfaceToBlock = null; 
+let selectedDuration = null; 
+
+async function refreshData() {
+  const url = '/api/network-info'; 
+  try {
+    const data = await getJSON(url);
+    console.log("Fetched Data:", data);
+    
+    document.getElementById('m_hostname').textContent = data.network.hostname || 'غير متوفر';
+    document.getElementById('m_ssid').textContent = data.network.ssid || 'غير متوفر';
+    
+    let browserFlows = data.network.interfaces || []; 
+    
+    document.getElementById('m_flows').textContent = browserFlows.length || 0;
+
+    const activeCount = browserFlows.length;
+    const now = new Date();
+
+    historyData.push({
+      time: now,
+      label: now.toLocaleTimeString(),
+      value: activeCount
+    });
+
+    const cutoff = new Date(now - maxDisplaySeconds * 1000);
+    historyData = historyData.filter(d => d.time >= cutoff);
+
+    const chartId = 'browserChart';
+    const chart = window[chartId];
+    if (chart) {
+      chart.data.labels = historyData.map(d => d.label);
+      chart.data.datasets[0].data = historyData.map(d => d.value);
+      chart.update();
+    }
+
+    // تحديث الجدول
+    const tbody = document.querySelector('#alertsTable tbody');
+    if (tbody) {
+      tbody.innerHTML = '';
+      browserFlows.forEach((item, index) => {
+        const score = parseFloat(item.ml_score);
+        const statusText = score > 0.6 ? 'تنبيه (خطير)' : (score > 0.3 ? 'تنبيه (متوسط)' : 'سليم');
+        const statusClass = score > 0.6 ? 'status-alert' : 'status-ok';
+        
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${item.ipv4 || item.ipv6 || '-'}</td>
+          <td>${item.domain || '-'}</td>
+          <td>${now.toLocaleTimeString()}</td>
+          <td class="${statusClass}">${statusText}</td>
+          <td>
+            <button class="action-btn" onclick="alert('محاكاة: معلومات عن ${item.domain}')">معلومات</button>
+          </td>`;
+        tbody.appendChild(tr);
+      });
+    }
+  } catch (e) {
+    console.error("Error in refreshData:", e);
+  }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  const chartId = 'browserChart';
+  const ctx = document.getElementById(chartId)?.getContext('2d');
+  if (ctx) {
+    window[chartId] = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: [],
+        datasets: [{
+          label: 'Browser Flows',
+          data: [],
+          borderColor: 'rgba(255, 99, 132, 1)',
+          backgroundColor: 'rgba(255, 99, 132, 0.2)',
+          fill: true,
+          tension: 0.3
+        }]
+      },
+      options: {
+        responsive: true,
+        animation: false,
+        scales: {
+          x: { title: { display: true, text: 'الوقت' } },
+          y: { title: { display: true, text: 'عدد الاتصالات' }, beginAtZero: true, min: 0 }
+        }
+      }
+    });
+  } else {
+    console.error("Canvas element not found");
+  }
+
+  const sliderContainer = document.createElement('div');
+  sliderContainer.style.marginTop = '20px';
+  sliderContainer.style.textAlign = 'center';
+  sliderContainer.innerHTML = `
+    <label for="timeRange">⏱️ المدة الزمنية المعروضة: <span id="timeLabel">5</span> دقائق</label><br>
+    <input type="range" id="timeRange" min="1" max="100" step="1" value="5" style="width: 60%;">
+  `;
+  document.querySelector('.container').appendChild(sliderContainer);
+
+  const timeRange = document.getElementById('timeRange');
+  const timeLabel = document.getElementById('timeLabel');
+  timeRange.addEventListener('input', () => {
+    const minutes = parseInt(timeRange.value);
+    maxDisplaySeconds = minutes * 60;
+    timeLabel.textContent = minutes;
+  });
+
+  setInterval(refreshData, 1000); 
+  refreshData();
+});
+  </script>
+  <script>
+    const mode = 'browser';
+  </script>
+</body>
+</html>
