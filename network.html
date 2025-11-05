@@ -6,7 +6,6 @@
     <title>تحليل بيانات الواجهات</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        /* ... (تضمين كود الـ CSS بالكامل كما هو) ... */
         body {
             margin: 0;
             min-height: 100vh;
@@ -456,32 +455,29 @@
         let currentSecurityScores = {}; 
         let scoreUpdateInterval; 
         let dataFetcherInterval; 
-        // 3. أضف متغير لحالة التمرير التلقائي
-        let autoScrollEnabled = true;
+        let autoScrollEnabled = true; // زر التبديل
         
         // ** (Mock Data & Client-Side Functions) **
-        // محاكاة للواجهات المحظورة لتطبيق منطق الواجهة
         let mockBlockedInterfaces = {};
         
         function generateMockNetworkData() {
             const interfaces = [
-                { name: 'Ethernet0', is_up: true, protocol: "TCP/UDP (Ethernet)", ipv4: '192.168.1.10', mac: '00:1A:2B:3C:4D:5E' },
-                { name: 'Wi-Fi', is_up: true, protocol: "TCP/UDP (Wireless)", ipv4: '192.168.1.11', mac: 'FF:EE:DD:CC:BB:AA' },
-                { name: 'Loopback', is_up: true, protocol: "Loopback (TCP/IP)", ipv4: '127.0.0.1', mac: '-' },
-                { name: 'VMnet1', is_up: false, protocol: "TCP/UDP (Virtual)", ipv4: '10.0.0.1', mac: 'AB:CD:EF:12:34:56' },
+                { name: 'Ethernet0', is_up: true, protocol: "TCP/UDP (Ethernet)", ipv4: '192.168.1.10', ipv6: 'fe80::1', mac: '00:1A:2B:3C:4D:5E' },
+                { name: 'Wi-Fi', is_up: true, protocol: "TCP/UDP (Wireless)", ipv4: '192.168.1.11', ipv6: 'fe80::2', mac: 'FF:EE:DD:CC:BB:AA' },
+                { name: 'Loopback', is_up: true, protocol: "Loopback (TCP/IP)", ipv4: '127.0.0.1', ipv6: '::1', mac: '-' },
+                { name: 'VMnet1', is_up: false, protocol: "TCP/UDP (Virtual)", ipv4: '10.0.0.1', ipv6: 'fe80::3', mac: 'AB:CD:EF:12:34:56' },
             ];
 
             const now = Date.now();
             
             return {
                 network: {
-                    hostname: 'DESKTOP-MOCK-ML',
-                    ssid: 'MOCK_WIFI_NETWORK',
+                    hostname: 'DESKTOP-MOCK-ML', // اسم الجهاز
+                    ssid: 'MOCK_WIFI_NETWORK', // اسم الشبكة
                     interfaces: interfaces.map(iface => {
                         const isBlocked = mockBlockedInterfaces[iface.name] === null || 
                                           (mockBlockedInterfaces[iface.name] && mockBlockedInterfaces[iface.name] > now);
 
-                        // محاكاة قيمة ml_score و severity و mac_status
                         let ml_score = (Math.random() * 1.0).toFixed(2);
                         let severity;
                         let mac_status = "Unknown";
@@ -511,14 +507,12 @@
         }
 
         async function getJSON(url) {
-            // محاكاة استدعاء API جلب البيانات
             return generateMockNetworkData();
         }
 
         async function postJSON(url, data) {
-            // محاكاة استدعاء API الحظر/الإلغاء
             const parts = url.split('/');
-            const action = parts[2]; // block or allow
+            const action = parts[2]; 
             const interfaceName = parts[3];
 
             if (action === 'block' || action === 'block-custom') {
@@ -531,22 +525,20 @@
                 }
 
                 if (minutes === null) {
-                    mockBlockedInterfaces[interfaceName] = null; // Permanent
+                    mockBlockedInterfaces[interfaceName] = null; 
                 } else if (minutes > 0) {
                     const expiration = Date.now() + minutes * 60 * 1000;
                     mockBlockedInterfaces[interfaceName] = expiration;
                 } else {
-                     mockBlockedInterfaces[interfaceName] = null; // Treat 0 as permanent or handle as error
+                     mockBlockedInterfaces[interfaceName] = null; 
                 }
                 
-                // إعادة تعيين الـ score في الواجهة
                 currentSecurityScores[interfaceName] = 0.0;
                 return { status: "blocked", interface: interfaceName };
             } 
             
             if (action === 'allow') {
                 delete mockBlockedInterfaces[interfaceName];
-                // إعادة تعيين الـ score في الواجهة
                 currentSecurityScores[interfaceName] = 0.0;
                 return { status: "allowed", interface: interfaceName };
             }
@@ -554,7 +546,6 @@
             return { status: "error" };
         }
         // ** (نهاية محاكاة البيانات) **
-
 
         const MAX_INCREMENT_FACTOR = 0.10;
         const INCREMENT_TIME = 2000;
@@ -725,7 +716,7 @@
                 currentSecurityScores[interfaceName] = 0.0; 
                 refreshData();
             } else {
-                alert("فشل محاكاة أمر الحظر. (يرجى مراجعة الكونسول)");
+                alert("محاكاة: فشل محاكاة أمر الحظر. (يرجى مراجعة الكونسول)");
             }
         }
         async function toggleBlock(interfaceName, block) {
@@ -739,7 +730,7 @@
                 }
                 refreshData();
             } else {
-                alert("فشل محاكاة أمر الحظر/الإلغاء. (يرجى مراجعة الكونسول)");
+                alert("محاكاة: فشل محاكاة أمر الحظر/الإلغاء. (يرجى مراجعة الكونسول)");
             }
         }
         function updateSaveStatus() {
@@ -1010,14 +1001,14 @@
         async function refreshData() {
             // ** تم إلغاء استخدام oldScroll/manualScroll **
 
-            // استخدام دالة mock get
             const data = await getJSON('/api/network-info');
 
             try {
-                // const data = await getJSON(url); // تم استبدالها
+                // تحديث اسم الجهاز والشبكة اللاسلكية
                 currentSsid = data.network.ssid && data.network.ssid.trim() !== '' ? data.network.ssid.replace(/\s/g, '_') : 'Default_LAN';
                 document.getElementById('m_hostname').textContent = data.network.hostname || 'غير متوفر';
                 document.getElementById('m_ssid').textContent = data.network.ssid || 'الشبكة السلكية (Default_LAN)';
+                
                 let allInterfacesData = data.network.interfaces; 
                 let currentActiveInterfaces = allInterfacesData.filter(item => item.is_up && !item.is_blocked).map(item => item.interface);
                 let activeCount = currentActiveInterfaces.length;
@@ -1066,11 +1057,10 @@
                     chart.canvas.style.width = `${newWidth}px`;
                     chart.canvas.width = newWidth;
                     
-                    // 4. التحكم في التمرير حسب زر التبديل
+                    // التحكم في التمرير حسب زر التبديل
                     if (wrapper && autoScrollEnabled) {
                         wrapper.scrollLeft = wrapper.scrollWidth;
                     }
-                    // ** تم حذف منطق تثبيت التمرير السابق **
                     
                     chart.data.labels = dataForDisplay.map(d => d.label);
                     chart.data.datasets[0].data = dataForDisplay.map(d => d.value);
@@ -1088,22 +1078,18 @@
         }
         function startScoreUpdater(interfacesData) {
             interfacesData.forEach(item => {
-                // هنا نستخدم قيمة ml_score الثابتة من محاكاة البيانات
                 interfaceSpeeds[item.interface] = item.ml_score || 0.0;
                 if (currentSecurityScores[item.interface] === undefined) {
                     currentSecurityScores[item.interface] = 0.0; 
                 }
             });
             
-            // في وضع Mock، يمكننا تبسيط دالة تحديث Score لتجنب التعقيد الغير ضروري 
-            // لكن سنبقيها لتعرض التحديثات
             scoreUpdateInterval = setInterval(() => {
                 let scoresChanged = false;
                 interfacesData.forEach(item => {
                     let currentScore = currentSecurityScores[item.interface];
                     let liveSpeedFactor = interfaceSpeeds[item.interface] || 0.0;
                     
-                    // إذا كانت محظورة، اجعل الـ score صفر
                     if (item.is_blocked || !item.is_up) {
                          if (currentScore > 0.0) {
                             currentSecurityScores[item.interface] = 0.0; 
@@ -1112,7 +1098,6 @@
                         return;
                     }
 
-                    // محاكاة تحرك الـ score ببطء نحو القيمة الهدف (liveSpeedFactor)
                     const incrementalChange = liveSpeedFactor * MAX_INCREMENT_FACTOR;
                     
                     if (Math.abs(currentScore - liveSpeedFactor) > 0.01) {
@@ -1140,10 +1125,10 @@
             allInterfacesForTable.forEach((item, index) => {
                 const number = index + 1;
                 const isBlocked = item.is_blocked;
-                // استخدام الـ score المحفوظ في currentSecurityScores
                 const currentScore = currentSecurityScores[item.interface] || 0.0; 
                 const statusClass = item.is_up ? 'status-up' : 'status-down'; 
                 const severityClass = `severity-${(item.severity || 'Unknown').toLowerCase()}`;
+                // هنا نستخدم mac_status الذي تم إضافته للمحاكاة
                 const macStatusClass = item.mac_status === 'Recommended' ? 'mac-recommended' : 'mac-unknown';
                 const statusText = isBlocked ? 'محظور' : (item.is_up ? 'نشط' : 'غير نشط');
                 const actionButton = isBlocked
@@ -1223,6 +1208,7 @@
         document.addEventListener('DOMContentLoaded', () => {
             const chartId = 'networkChart';
             const ctx = document.getElementById(chartId)?.getContext('2d');
+            
             if (ctx) {
                 window[chartId] = new Chart(ctx, {
                     type: 'line',
@@ -1293,7 +1279,6 @@
             }
             const container = document.querySelector('.container');
             
-            // 2. أضف زر التبديل (Toggle) في واجهة المستخدم
             const newControlsHTML = `
                 <div id="displayDurationControls" style="text-align: center; margin-top: 20px;">
                     <label>⏱️ تحديد مدة العرض في الرسم البياني :</label>
@@ -1337,11 +1322,9 @@
             }
             applyBtn.onclick = applyNewChartDuration;
             
-            // 5. أضف مستمع لزر التبديل
             const autoScrollToggle = document.getElementById('autoScrollToggle');
             autoScrollToggle.addEventListener('change', function() {
                 autoScrollEnabled = this.checked;
-                // إذا تم تفعيل التمرير التلقائي بعد إيقافه، قم بالتمرير للنهاية مباشرة
                 if (autoScrollEnabled) {
                      const wrapper = document.getElementById('chartWrapper');
                      if (wrapper) {
